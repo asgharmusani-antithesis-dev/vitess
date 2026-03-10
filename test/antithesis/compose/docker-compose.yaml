@@ -95,7 +95,7 @@ services:
       - SCHEMA_FILES=lookup_keyspace_schema_file.sql
       - POST_LOAD_FILE=
       - SOURCE_DB=0
-    image: docker.io/vitess/lite:latest
+    image: us-central1-docker.pkg.dev/molten-verve-216720/vitess-repository/vitess-antithesis-vitess:latest
     volumes:
       - .:/script
   schemaload_test_keyspace:
@@ -123,7 +123,7 @@ services:
       - SCHEMA_FILES=test_keyspace_schema_file.sql
       - POST_LOAD_FILE=
       - SOURCE_DB=0
-    image: docker.io/vitess/lite:latest
+    image: us-central1-docker.pkg.dev/molten-verve-216720/vitess-repository/vitess-antithesis-vitess:latest
     volumes:
       - .:/script
   set_keyspace_durability_policy:
@@ -140,7 +140,7 @@ services:
     environment:
       - KEYSPACES=test_keyspace lookup_keyspace
       - GRPC_PORT=15999
-    image: docker.io/vitess/lite:latest
+    image: us-central1-docker.pkg.dev/molten-verve-216720/vitess-repository/vitess-antithesis-vitess:latest
     volumes:
       - .:/script
   vreplication:
@@ -155,7 +155,7 @@ services:
       - TOPOLOGY_FLAGS=--topo_implementation etcd2 --topo_global_server_address etcd:2379
         --topo_global_root /vitess/global
       - SOURCE_DB=0
-    image: docker.io/vitess/lite:latest
+    image: us-central1-docker.pkg.dev/molten-verve-216720/vitess-repository/vitess-antithesis-vitess:latest
     volumes:
       - .:/script
   vtctld:
@@ -172,7 +172,7 @@ services:
           condition: service_healthy
       source_db_host:
         condition: service_healthy
-    image: docker.io/vitess/lite:latest
+    image: us-central1-docker.pkg.dev/molten-verve-216720/vitess-repository/vitess-antithesis-vitess:latest
     ports:
       - 15000:8080
     volumes:
@@ -189,7 +189,7 @@ services:
         --normalize_queries=true '
     depends_on:
       - vtctld
-    image: docker.io/vitess/lite:latest
+    image: us-central1-docker.pkg.dev/molten-verve-216720/vitess-repository/vitess-antithesis-vitess:latest
     ports:
       - 15099:8080
       - 15306:15306
@@ -212,7 +212,7 @@ services:
       - SOURCE_DB=0
       - DB_USER=
       - DB_PASS=
-    image: docker.io/vitess/lite:latest
+    image: us-central1-docker.pkg.dev/molten-verve-216720/vitess-repository/vitess-antithesis-vitess:latest
     ports:
       - 13000:8080
     volumes:
@@ -249,7 +249,7 @@ services:
         - CMD-SHELL
         - curl -s --fail --show-error localhost:8080/debug/health
       timeout: 10s
-    image: docker.io/vitess/lite:latest
+    image: us-central1-docker.pkg.dev/molten-verve-216720/vitess-repository/vitess-antithesis-vitess:latest
     ports:
       - 15101:8080
     volumes:
@@ -286,7 +286,7 @@ services:
         - CMD-SHELL
         - curl -s --fail --show-error localhost:8080/debug/health
       timeout: 10s
-    image: docker.io/vitess/lite:latest
+    image: us-central1-docker.pkg.dev/molten-verve-216720/vitess-repository/vitess-antithesis-vitess:latest
     ports:
       - 15102:8080
     volumes:
@@ -323,7 +323,7 @@ services:
         - CMD-SHELL
         - curl -s --fail --show-error localhost:8080/debug/health
       timeout: 10s
-    image: docker.io/vitess/lite:latest
+    image: us-central1-docker.pkg.dev/molten-verve-216720/vitess-repository/vitess-antithesis-vitess:latest
     ports:
       - 15201:8080
     volumes:
@@ -360,7 +360,7 @@ services:
         - CMD-SHELL
         - curl -s --fail --show-error localhost:8080/debug/health
       timeout: 10s
-    image: docker.io/vitess/lite:latest
+    image: us-central1-docker.pkg.dev/molten-verve-216720/vitess-repository/vitess-antithesis-vitess:latest
     ports:
       - 15202:8080
     volumes:
@@ -397,7 +397,7 @@ services:
         - CMD-SHELL
         - curl -s --fail --show-error localhost:8080/debug/health
       timeout: 10s
-    image: docker.io/vitess/lite:latest
+    image: us-central1-docker.pkg.dev/molten-verve-216720/vitess-repository/vitess-antithesis-vitess:latest
     ports:
       - 15301:8080
     volumes:
@@ -434,7 +434,7 @@ services:
         - CMD-SHELL
         - curl -s --fail --show-error localhost:8080/debug/health
       timeout: 10s
-    image: docker.io/vitess/lite:latest
+    image: us-central1-docker.pkg.dev/molten-verve-216720/vitess-repository/vitess-antithesis-vitess:latest
     ports:
       - 15302:8080
     volumes:
