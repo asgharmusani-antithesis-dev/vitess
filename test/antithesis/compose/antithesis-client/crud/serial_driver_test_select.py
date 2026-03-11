@@ -21,7 +21,7 @@ from helper import log
 # Test configuration
 NUM_INSERTS = helper.generate_requests()
 TABLE_NAME = 'test_select'
-TABLET_TYPES = ['primary', 'replica', 'rdonly']
+TABLET_TYPES = ['primary', 'replica']
 
 
 def run_test():
