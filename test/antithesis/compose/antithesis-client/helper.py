@@ -99,11 +99,12 @@ def insert_msg(conn, msg, table_name):
     Insert a random message into table_name
     Returns (success, error, lastrowid)
     """
+    row_id = get_random() % (2**53)
     cursor = conn.cursor()
     try:
         cursor.execute(
-            f"INSERT INTO {table_name} (msg) VALUES (%s)",
-            (msg,)
+            f"INSERT INTO {table_name} (id, msg) VALUES (%s, %s)",
+            (row_id, msg)
         )
         lastrowid = cursor.lastrowid
         cursor.close()
@@ -136,6 +137,7 @@ def get_msg(conn, row_id, table_name, tablet_type='primary'):
     cursor = conn.cursor()
     try:
         if tablet_type != 'primary':
+            conn.commit()
             cursor.execute(f"USE {config['keyspace']}@{tablet_type}")
         cursor.execute(
             f"SELECT id, msg FROM {table_name} WHERE id = %s",
@@ -143,7 +145,11 @@ def get_msg(conn, row_id, table_name, tablet_type='primary'):
         )
         result = cursor.fetchone()
         cursor.close()
-        return True, None, result
+        if result is not None:
+            return True, None, result
+        else: 
+            return True, {"type": "NotFound", "message": f"No row found for id={row_id}"}, None
+
     except Exception as e:
         try:
             cursor.close()
