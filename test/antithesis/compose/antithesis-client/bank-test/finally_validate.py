@@ -62,6 +62,7 @@ def validate():
 
         cursor.execute("SELECT SUM(balance) FROM accounts")
         current_total = cursor.fetchone()[0]
+        conn.commit()
         log(f"[Finally] Current state (primary): num_accts={current_num_accts}, total={current_total}")
     except Exception as e:
         log(f"[Finally] Failed to read current state from primary: {e}")
@@ -81,6 +82,7 @@ def validate():
         cursor.execute(f"USE {config['keyspace']}@replica")
         cursor.execute("SELECT SUM(balance) FROM accounts")
         replica_total = cursor.fetchone()[0]
+        conn.commit()
         log(f"[Finally] Current state (replica): total={replica_total}")
     except Exception as e:
         log(f"[Finally] Failed to read current state from replica: {e}")

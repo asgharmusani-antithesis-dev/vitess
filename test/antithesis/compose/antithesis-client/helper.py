@@ -137,13 +137,13 @@ def get_msg(conn, row_id, table_name, tablet_type='primary'):
     cursor = conn.cursor()
     try:
         if tablet_type != 'primary':
-            conn.commit()
             cursor.execute(f"USE {config['keyspace']}@{tablet_type}")
         cursor.execute(
             f"SELECT id, msg FROM {table_name} WHERE id = %s",
             (row_id,)
         )
         result = cursor.fetchone()
+        conn.commit()
         cursor.close()
         if result is not None:
             return True, None, result
