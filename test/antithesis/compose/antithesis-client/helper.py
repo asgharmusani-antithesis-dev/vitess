@@ -1,7 +1,7 @@
 """
 Vitess Test Helper - Connection utilities for VTGate
 """
-import os, sys, string, inspect
+import os, sys, string, inspect, time
 import mysql.connector
 from antithesis.random import random_choice, get_random
 from antithesis.assertions import always, unreachable
@@ -52,6 +52,71 @@ def get_connection(database=None):
     except Exception as e:
         log(f"Connection to VTGate failed: {type(e).__name__}: {e}")
         raise
+
+def get_connection_with_retry(database=None, max_retries=20, sleep_seconds=5, exit_on_failure=True):
+    """
+    Retry get_connection() up to max_retries times with sleep between attempts.
+
+    Args:
+        database: Optional database/keyspace name passed to get_connection().
+        max_retries: Number of attempts before giving up.
+        sleep_seconds: Seconds to sleep between attempts.
+        exit_on_failure: If True, calls sys.exit(1) after exhausting retries.
+                         If False, returns None.
+
+    Returns:
+        A mysql.connector connection, or None if exit_on_failure is False and all retries fail.
+    """
+    for attempt in range(1, max_retries + 1):
+        try:
+            return get_connection(database=database)
+        except Exception as e:
+            log(f"Connection attempt {attempt}/{max_retries} failed: {type(e).__name__}: {e}")
+            if attempt < max_retries:
+                time.sleep(sleep_seconds)
+
+    log(f"All {max_retries} connection attempts exhausted.")
+    if exit_on_failure:
+        sys.exit(1)
+    return None
+
+
+def retry_with_reconnect(operation, conn, max_retries=20, sleep_seconds=5):
+    """
+    Retry an operation with automatic reconnection on failure.
+
+    Args:
+        operation: Callable taking a connection, returns a tuple where
+                   result[0] is a boolean success flag.
+        conn: Current mysql.connector connection.
+        max_retries: Number of retry attempts.
+        sleep_seconds: Seconds to sleep between attempts.
+
+    Returns:
+        (result_tuple, conn) — conn may be a refreshed connection.
+    """
+    result = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            result = operation(conn)
+            if result[0]:
+                return result, conn
+        except Exception as e:
+            log(f"Operation raised exception on attempt {attempt}/{max_retries}: {type(e).__name__}: {e}")
+            result = (False, {"type": type(e).__name__, "message": str(e)})
+
+        log(f"Operation failed on attempt {attempt}/{max_retries}: {result[1]}")
+        if attempt < max_retries:
+            time.sleep(sleep_seconds)
+            if not conn.is_connected():
+                log("Connection is dead, attempting reconnect...")
+                new_conn = get_connection_with_retry(exit_on_failure=False, max_retries=3, sleep_seconds=sleep_seconds)
+                if new_conn is not None:
+                    conn = new_conn
+
+    log(f"All {max_retries} retry attempts exhausted for operation.")
+    return result, conn
+
 
 def setup_test_table(conn, table_name='test'):
     """
@@ -148,7 +213,7 @@ def get_msg(conn, row_id, table_name, tablet_type='primary'):
         if result is not None:
             return True, None, result
         else: 
-            return True, {"type": "NotFound", "message": f"No row found for id={row_id}"}, None
+            return False, {"type": "NotFound", "message": f"No row found for id={row_id}"}, None
 
     except Exception as e:
         try:
