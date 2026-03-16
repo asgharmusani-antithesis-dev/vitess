@@ -29,6 +29,11 @@ services:
       - "15999"
       - "3306"
 
+  vttablet104:
+    ports:
+      - "15999"
+      - "3306"
+
   vttablet201:
     ports:
       - "15999"
@@ -39,12 +44,22 @@ services:
       - "15999"
       - "3306"
 
+  vttablet204:
+    ports:
+      - "15999"
+      - "3306"
+
   vttablet301:
     ports:
       - "15999"
       - "3306"
 
   vttablet302:
+    ports:
+      - "15999"
+      - "3306"
+
+  vttablet304:
     ports:
       - "15999"
       - "3306"

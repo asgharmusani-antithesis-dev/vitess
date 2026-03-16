@@ -22,6 +22,7 @@ services:
       - SETUP_POLL_INTERVAL=5s
     volumes:
       - .:/script
+  
   etcd:
     container_name: etcd
     image: quay.io/coreos/etcd:v3.5.16
@@ -45,6 +46,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+  
   source_db_host:
     container_name: source_db_host
     image: us-central1-docker.pkg.dev/molten-verve-216720/vitess-repository/vitess-antithesis-mysql:latest
@@ -72,6 +74,7 @@ services:
     volumes:
       - ./source_db/mysql/:/docker-entrypoint-initdb.d/
       - ./source_db/mysql/log:/var/log/mysql
+  
   schemaload_lookup_keyspace:
     container_name: schemaload_lookup_keyspace
     command:
@@ -98,6 +101,7 @@ services:
     image: docker.io/vitess/lite:latest
     volumes:
       - .:/script
+
   schemaload_test_keyspace:
     container_name: schemaload_test_keyspace
     command:
@@ -126,6 +130,7 @@ services:
     image: docker.io/vitess/lite:latest
     volumes:
       - .:/script
+
   set_keyspace_durability_policy:
     container_name: set_keyspace_durability_policy
     command:
@@ -143,6 +148,7 @@ services:
     image: docker.io/vitess/lite:latest
     volumes:
       - .:/script
+
   vreplication:
     container_name: vreplication
     command:
@@ -158,6 +164,7 @@ services:
     image: docker.io/vitess/lite:latest
     volumes:
       - .:/script
+
   vtctld:
     container_name: vtctld
     command:
@@ -177,6 +184,7 @@ services:
       - 15000:8080
     volumes:
       - .:/script
+
   vtgate:
     container_name: vtgate
     command:
@@ -195,6 +203,7 @@ services:
       - 15306:15306
     volumes:
       - .:/script
+
   vtorc:
     container_name: vtorc
     command:
@@ -217,6 +226,7 @@ services:
       - 13000:8080
     volumes:
       - .:/script
+
   vttablet101:
     container_name: vttablet101
     command:
@@ -254,6 +264,7 @@ services:
       - 15101:8080
     volumes:
       - .:/script
+
   vttablet102:
     container_name: vttablet102
     command:
@@ -291,6 +302,45 @@ services:
       - 15102:8080
     volumes:
       - .:/script
+
+  vttablet104:
+    container_name: vttablet104
+    command:
+      - sh
+      - -c
+      - /script/vttablet-up.sh 104
+    depends_on:
+      vtctld:
+        condition: service_started
+    environment:
+      - TOPOLOGY_FLAGS=--topo_implementation etcd2 --topo_global_server_address etcd:2379
+        --topo_global_root /vitess/global
+      - WEB_PORT=8080
+      - GRPC_PORT=15999
+      - CELL=test
+      - KEYSPACE=test_keyspace
+      - SHARD=-80
+      - ROLE=replica
+      - VTHOST=vttablet104
+      - SOURCE_DB=0
+      - DB_PORT=
+      - DB_HOST=
+      - DB_USER=
+      - DB_PASS=
+      - DB_CHARSET=
+    healthcheck:
+      interval: 15s
+      retries: 15
+      test:
+        - CMD-SHELL
+        - curl -s --fail --show-error localhost:8080/debug/health
+      timeout: 10s
+    image: docker.io/vitess/lite:latest
+    ports:
+      - 15104:8080
+    volumes:
+      - .:/script
+
   vttablet201:
     container_name: vttablet201
     command:
@@ -328,6 +378,7 @@ services:
       - 15201:8080
     volumes:
       - .:/script
+
   vttablet202:
     container_name: vttablet202
     command:
@@ -365,6 +416,45 @@ services:
       - 15202:8080
     volumes:
       - .:/script
+
+  vttablet204:
+    container_name: vttablet204
+    command:
+      - sh
+      - -c
+      - /script/vttablet-up.sh 204
+    depends_on:
+      vtctld:
+        condition: service_started
+    environment:
+      - TOPOLOGY_FLAGS=--topo_implementation etcd2 --topo_global_server_address etcd:2379
+        --topo_global_root /vitess/global
+      - WEB_PORT=8080
+      - GRPC_PORT=15999
+      - CELL=test
+      - KEYSPACE=test_keyspace
+      - SHARD=80-
+      - ROLE=replica
+      - VTHOST=vttablet204
+      - SOURCE_DB=0
+      - DB_PORT=
+      - DB_HOST=
+      - DB_USER=
+      - DB_PASS=
+      - DB_CHARSET=
+    healthcheck:
+      interval: 15s
+      retries: 15
+      test:
+        - CMD-SHELL
+        - curl -s --fail --show-error localhost:8080/debug/health
+      timeout: 10s
+    image: docker.io/vitess/lite:latest
+    ports:
+      - 15204:8080
+    volumes:
+      - .:/script
+
   vttablet301:
     container_name: vttablet301
     command:
@@ -402,6 +492,7 @@ services:
       - 15301:8080
     volumes:
       - .:/script
+
   vttablet302:
     container_name: vttablet302
     command:
@@ -437,5 +528,43 @@ services:
     image: docker.io/vitess/lite:latest
     ports:
       - 15302:8080
+    volumes:
+      - .:/script
+
+  vttablet304:
+    container_name: vttablet304
+    command:
+      - sh
+      - -c
+      - /script/vttablet-up.sh 304
+    depends_on:
+      vtctld:
+        condition: service_started
+    environment:
+      - TOPOLOGY_FLAGS=--topo_implementation etcd2 --topo_global_server_address etcd:2379
+        --topo_global_root /vitess/global
+      - WEB_PORT=8080
+      - GRPC_PORT=15999
+      - CELL=test
+      - KEYSPACE=lookup_keyspace
+      - SHARD=-
+      - ROLE=replica
+      - VTHOST=vttablet304
+      - SOURCE_DB=0
+      - DB_PORT=
+      - DB_HOST=
+      - DB_USER=
+      - DB_PASS=
+      - DB_CHARSET=
+    healthcheck:
+      interval: 15s
+      retries: 15
+      test:
+        - CMD-SHELL
+        - curl -s --fail --show-error localhost:8080/debug/health
+      timeout: 10s
+    image: docker.io/vitess/lite:latest
+    ports:
+      - 15304:8080
     volumes:
       - .:/script
