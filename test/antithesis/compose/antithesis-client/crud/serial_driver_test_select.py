@@ -29,31 +29,39 @@ def run_test():
     log(f"Starting select test against {config['host']}:{config['port']}")
     log(f"Keyspace: {config['keyspace']}")
     log(f"Tablet types to test: {TABLET_TYPES}")
-    
+
     # Track expected state: {id: msg}
     expected_state = {}
-    
-    # Connect to vtgate
-    conn = helper.get_connection()
 
-    # Setup table
-    success, error = helper.setup_test_table(conn, TABLE_NAME)
+    # Connect to vtgate with retry
+    conn = helper.get_connection_with_retry()
+
+    # Setup table with retry
+    result, conn = helper.retry_with_reconnect(
+        lambda c: helper.setup_test_table(c, TABLE_NAME), conn
+    )
+    success, error = result
     sometimes(success, "Successful table creation", {"error":error})
 
     if not success:
-        log(f"Table '{TABLE_NAME}' creation failed")    
-        conn.close()
-        sys.exit(0)
-        return False
+        log(f"Table '{TABLE_NAME}' creation failed after retries")
+        try:
+            conn.close()
+        except Exception:
+            pass
+        sys.exit(1)
     else:
         log(f"Table '{TABLE_NAME}' ready")
 
-    
+
     # Phase 1: Perform inserts
     log(f"Inserting {NUM_INSERTS} rows...")
     for i in range(NUM_INSERTS):
         msg = helper.generate_random_string()
-        success, error, lastrowid = helper.insert_msg(conn, msg, TABLE_NAME)
+        result, conn = helper.retry_with_reconnect(
+            lambda c, _msg=msg: helper.insert_msg(c, _msg, TABLE_NAME), conn
+        )
+        success, error, lastrowid = result
         sometimes(success, "Successful insert query", {"error": error})
         if success:
             row_id = lastrowid
@@ -64,16 +72,17 @@ def run_test():
 
     # Phase 2: Read from each tablet type and verify
     verification_passed = True
-    
+
     for tablet_type in TABLET_TYPES:
         log(f"Verifying rows from {tablet_type}...")
         tablet_passed = True
-        
+
         for row_id, expected_msg in expected_state.items():
-            success, error, result = helper.get_msg(
-                conn, row_id, TABLE_NAME, tablet_type
+            result, conn = helper.retry_with_reconnect(
+                lambda c, _rid=row_id, _tt=tablet_type: helper.get_msg(c, _rid, TABLE_NAME, _tt), conn
             )
-            
+            success, error, query_result = result
+
             # Replica/rdonly may have replication lag, so use sometimes
             sometimes(success, f"Get from {tablet_type} successful", {"error": error})
 
@@ -81,11 +90,11 @@ def run_test():
                 log(f"  [{tablet_type}] Get request failed for {row_id}: {error}")
                 continue
 
-            if result is None:
+            if query_result is None:
                 log(f"  [{tablet_type}] Row id={row_id} not found (replication lag?)")
                 continue
 
-            actual_id, actual_msg = result
+            actual_id, actual_msg = query_result
             row_matches = (actual_id == row_id and actual_msg == expected_msg)
 
             if row_matches:
@@ -97,7 +106,7 @@ def run_test():
                     f"Row mismatch on {tablet_type}",
                     {"tablet_type": tablet_type, "row_id": row_id, "expected": expected_msg, "actual": actual_msg}
                 )
-        
+
         if tablet_passed:
             log(f"[{tablet_type}] All rows verified: OK")
         else:
@@ -105,17 +114,20 @@ def run_test():
             verification_passed = False
 
     # Cleanup
-    conn.close()
+    try:
+        conn.close()
+    except Exception:
+        pass
     log("Connection closed")
-    
+
     if verification_passed:
         log("TEST PASSED")
     else:
         log("TEST FAILED")
-    
+
     return verification_passed
 
 
 if __name__ == '__main__':
     success = run_test()
-    sys.exit(0)
+    sys.exit(0 if success else 1)
