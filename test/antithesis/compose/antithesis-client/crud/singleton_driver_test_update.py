@@ -27,7 +27,6 @@ def run_test():
     config = helper.get_config()
     log(f"Starting update test against {config['host']}:{config['port']}")
     log(f"Keyspace: {config['keyspace']}")
-
     # Track expected state: {id: msg}
     expected_state = {}
 
@@ -108,7 +107,6 @@ def run_test():
 
         if row_matches:
             log(f"  Verified row id={row_id}: OK")
-
         else:
             verification_passed = False
             log(f"  MISMATCH row id={row_id}: expected='{expected_msg}', actual='{actual_msg}'")
@@ -128,7 +126,6 @@ def run_test():
         log("TEST PASSED")
     else:
         log("TEST FAILED")
-
     return verification_passed
 
 

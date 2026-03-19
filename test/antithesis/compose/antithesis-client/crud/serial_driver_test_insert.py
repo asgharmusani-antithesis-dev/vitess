@@ -107,7 +107,6 @@ def run_test():
         log("TEST PASSED")
     else:
         log("TEST FAILED")
-
     return verification_passed
 
 if __name__ == '__main__':

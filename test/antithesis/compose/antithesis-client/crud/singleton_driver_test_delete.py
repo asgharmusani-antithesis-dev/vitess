@@ -129,7 +129,6 @@ def run_test():
         log("TEST PASSED")
     else:
         log("TEST FAILED")
-
     return verification_passed
 
 

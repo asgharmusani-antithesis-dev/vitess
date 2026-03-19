@@ -118,7 +118,6 @@ def run_test():
                     f"Row mismatch on {tablet_type}",
                     {"tablet_type": tablet_type, "row_id": row_id, "expected": expected_msg, "actual": actual_msg}
                 )
-
         if tablet_passed:
             log(f"[{tablet_type}] All rows verified: OK")
         else:
@@ -136,7 +135,6 @@ def run_test():
         log("TEST PASSED")
     else:
         log("TEST FAILED")
-
     return verification_passed
 
 
