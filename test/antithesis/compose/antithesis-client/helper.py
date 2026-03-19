@@ -96,16 +96,19 @@ def retry_with_reconnect(operation, conn, max_retries=20, sleep_seconds=5):
         (result_tuple, conn) — conn may be a refreshed connection.
     """
     result = None
+    last_exception = None
     for attempt in range(1, max_retries + 1):
         try:
             result = operation(conn)
+            last_exception = None
             if result[0]:
                 return result, conn
         except Exception as e:
+            last_exception = e
             log(f"Operation raised exception on attempt {attempt}/{max_retries}: {type(e).__name__}: {e}")
-            result = (False, {"type": type(e).__name__, "message": str(e)})
 
-        log(f"Operation failed on attempt {attempt}/{max_retries}: {result[1]}")
+        if result is not None:
+            log(f"Operation failed on attempt {attempt}/{max_retries}: {result[1]}")
         if attempt < max_retries:
             time.sleep(sleep_seconds)
             if not conn.is_connected():
@@ -115,7 +118,9 @@ def retry_with_reconnect(operation, conn, max_retries=20, sleep_seconds=5):
                     conn = new_conn
 
     log(f"All {max_retries} retry attempts exhausted for operation.")
-    return result, conn
+    if result is not None:
+        return result, conn
+    raise last_exception
 
 
 def setup_test_table(conn, table_name='test'):

@@ -78,21 +78,33 @@ def run_test():
         tablet_passed = True
 
         for row_id, expected_msg in expected_state.items():
-            result, conn = helper.retry_with_reconnect(
-                lambda c, _rid=row_id, _tt=tablet_type: helper.get_msg(c, _rid, TABLE_NAME, _tt), conn
-            )
+            if tablet_type == 'primary':
+                result, conn = helper.retry_with_reconnect(
+                    lambda c, _rid=row_id: helper.get_msg(c, _rid, TABLE_NAME), conn
+                )
+            else:
+                # For replicas, NotFound is expected (replication lag) — don't waste retries on it.
+                # Connection errors still get retried.
+                def read_replica(c, _rid=row_id, _tt=tablet_type):
+                    success, error, result = helper.get_msg(c, _rid, TABLE_NAME, _tt)
+                    if not success and error.get("type") == "NotFound":
+                        return (True, {"type": "NotFound"}, None)
+                    return (success, error, result)
+                result, conn = helper.retry_with_reconnect(read_replica, conn)
             success, error, query_result = result
 
-            # Replica/rdonly may have replication lag, so use sometimes
-            sometimes(success, f"Get from {tablet_type} successful", {"error": error})
-
             if not success:
+                sometimes(False, f"Get from {tablet_type} successful", {"error": error})
                 log(f"  [{tablet_type}] Get request failed for {row_id}: {error}")
                 continue
 
             if query_result is None:
+                # Row not found — for replicas this is replication lag, for primary it's unexpected
+                sometimes(False, f"Get from {tablet_type} successful", {"error": error})
                 log(f"  [{tablet_type}] Row id={row_id} not found (replication lag?)")
                 continue
+
+            sometimes(True, f"Get from {tablet_type} successful", {"error": error})
 
             actual_id, actual_msg = query_result
             row_matches = (actual_id == row_id and actual_msg == expected_msg)
