@@ -3,6 +3,10 @@ services:
     build:
       context: ./antithesis-client
       dockerfile: Dockerfile
+    volumes:
+      - ./antithesis-client/crud:/opt/antithesis/test/v1/crud
+      - ./antithesis-client/bank-test:/opt/antithesis/test/v1/bank-test
+      - ./antithesis-client/helper.py:/opt/antithesis/resources/helper.py
 
   source_db_host:
     build:
