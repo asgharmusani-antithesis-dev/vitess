@@ -20,6 +20,9 @@ services:
       - VTCTLD_CELL=test
       - SETUP_TIMEOUT=10m
       - SETUP_POLL_INTERVAL=5s
+      - SLEEP_MIN=15
+      - SLEEP_MAX=300
+      - ANTITHESIS_SDK_LOCAL_OUTPUT=assertions_from_client.json
     volumes:
       - .:/script
   

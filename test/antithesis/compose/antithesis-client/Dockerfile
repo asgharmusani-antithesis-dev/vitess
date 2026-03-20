@@ -23,6 +23,7 @@ COPY --from=builder /out/antithesis-sleep /opt/antithesis/test/v1/main/serial_dr
 
 COPY ./helper.py /opt/antithesis/resources/helper.py
 COPY crud/ /opt/antithesis/test/v1/crud
+COPY --from=builder /out/antithesis-healthcheck /opt/antithesis/test/v1/crud/eventually_vitess_health
 # Temporarily remove the bank test from the client image
 # COPY bank-test/ /opt/antithesis/test/v1/bank-test
 

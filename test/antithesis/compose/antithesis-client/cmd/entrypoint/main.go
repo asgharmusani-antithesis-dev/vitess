@@ -174,7 +174,8 @@ func waitForHealthyShards(ctx context.Context, vtgateAddr string, cell string) e
 			return false, nil
 		}
 		for _, entry := range counts {
-			if entry.primaries < 1 || entry.replicas < 1 {
+			// Require 1 primary and 2 replicas for setup complete 
+			if entry.primaries < 1 || entry.replicas < 2 {
 				return false, nil
 			}
 		}
