@@ -1,7 +1,7 @@
 services:
   antithesis-client:
     container_name: antithesis-client
-    image: us-central1-docker.pkg.dev/molten-verve-216720/vitess-repository/vitess-antithesis-client:latest
+    image: us-central1-docker.pkg.dev/molten-verve-216720/vitess-repository/vitess-antithesis-client:antithesis_changes
     depends_on:
       vtorc:
         condition: service_started
@@ -103,7 +103,9 @@ services:
       - SOURCE_DB=0
     image: docker.io/vitess/lite:latest
     volumes:
-      - .:/script
+      - ./schemaload.sh:/script/schemaload.sh
+      - ./lookup_keyspace_vschema.json:/script/lookup_keyspace_vschema.json
+      - ./tables:/script/tables
 
   schemaload_test_keyspace:
     container_name: schemaload_test_keyspace
@@ -132,7 +134,9 @@ services:
       - SOURCE_DB=0
     image: docker.io/vitess/lite:latest
     volumes:
-      - .:/script
+      - ./schemaload.sh:/script/schemaload.sh
+      - ./test_keyspace_vschema.json:/script/test_keyspace_vschema.json
+      - ./tables:/script/tables
 
   set_keyspace_durability_policy:
     container_name: set_keyspace_durability_policy
@@ -150,7 +154,7 @@ services:
       - GRPC_PORT=15999
     image: docker.io/vitess/lite:latest
     volumes:
-      - .:/script
+      - ./set_keyspace_durability_policy.sh:/script/set_keyspace_durability_policy.sh
 
   vreplication:
     container_name: vreplication
@@ -166,7 +170,23 @@ services:
       - SOURCE_DB=0
     image: docker.io/vitess/lite:latest
     volumes:
-      - .:/script
+      - ./source_db_vreplication.sh:/script/source_db_vreplication.sh
+
+  init_cell:
+    container_name: init_cell
+    command:
+      - sh
+      - -c
+      - /script/init_cell.sh
+    depends_on:
+      vtctld:
+        condition: service_started
+    environment:
+      - GRPC_PORT=15999
+      - CELL=test
+    image: docker.io/vitess/lite:latest
+    volumes:
+      - ./init_cell.sh:/script/init_cell.sh
 
   vtctld:
     container_name: vtctld
@@ -185,8 +205,6 @@ services:
     image: docker.io/vitess/lite:latest
     ports:
       - 15000:8080
-    volumes:
-      - .:/script
 
   vtgate:
     container_name: vtgate
@@ -199,13 +217,14 @@ services:
         test --tablet_types_to_wait PRIMARY,REPLICA,RDONLY --service_map ''grpc-vtgateservice''
         --normalize_queries=true '
     depends_on:
-      - vtctld
+      init_cell:
+        condition: service_completed_successfully
     image: docker.io/vitess/lite:latest
     ports:
       - 15099:8080
       - 15306:15306
     volumes:
-      - .:/script
+      - ./run-forever.sh:/script/run-forever.sh
 
   vtorc:
     container_name: vtorc
@@ -228,7 +247,8 @@ services:
     ports:
       - 13000:8080
     volumes:
-      - .:/script
+      - ./vtorc-up.sh:/script/vtorc-up.sh
+      - ./vtorc:/script/vtorc
 
   vttablet101:
     container_name: vttablet101
@@ -237,8 +257,8 @@ services:
       - -c
       - /script/vttablet-up.sh 101
     depends_on:
-      vtctld:
-        condition: service_started
+      init_cell:
+        condition: service_completed_successfully
     environment:
       - TOPOLOGY_FLAGS=--topo_implementation etcd2 --topo_global_server_address etcd:2379
         --topo_global_root /vitess/global
@@ -266,7 +286,8 @@ services:
     ports:
       - 15101:8080
     volumes:
-      - .:/script
+      - ./vttablet-up.sh:/script/vttablet-up.sh
+      - ./config:/script/config
 
   vttablet102:
     container_name: vttablet102
@@ -275,8 +296,8 @@ services:
       - -c
       - /script/vttablet-up.sh 102
     depends_on:
-      vtctld:
-        condition: service_started
+      init_cell:
+        condition: service_completed_successfully
     environment:
       - TOPOLOGY_FLAGS=--topo_implementation etcd2 --topo_global_server_address etcd:2379
         --topo_global_root /vitess/global
@@ -304,7 +325,8 @@ services:
     ports:
       - 15102:8080
     volumes:
-      - .:/script
+      - ./vttablet-up.sh:/script/vttablet-up.sh
+      - ./config:/script/config
 
   vttablet104:
     container_name: vttablet104
@@ -313,8 +335,8 @@ services:
       - -c
       - /script/vttablet-up.sh 104
     depends_on:
-      vtctld:
-        condition: service_started
+      init_cell:
+        condition: service_completed_successfully
     environment:
       - TOPOLOGY_FLAGS=--topo_implementation etcd2 --topo_global_server_address etcd:2379
         --topo_global_root /vitess/global
@@ -342,7 +364,8 @@ services:
     ports:
       - 15104:8080
     volumes:
-      - .:/script
+      - ./vttablet-up.sh:/script/vttablet-up.sh
+      - ./config:/script/config
 
   vttablet201:
     container_name: vttablet201
@@ -351,8 +374,8 @@ services:
       - -c
       - /script/vttablet-up.sh 201
     depends_on:
-      vtctld:
-        condition: service_started
+      init_cell:
+        condition: service_completed_successfully
     environment:
       - TOPOLOGY_FLAGS=--topo_implementation etcd2 --topo_global_server_address etcd:2379
         --topo_global_root /vitess/global
@@ -380,7 +403,8 @@ services:
     ports:
       - 15201:8080
     volumes:
-      - .:/script
+      - ./vttablet-up.sh:/script/vttablet-up.sh
+      - ./config:/script/config
 
   vttablet202:
     container_name: vttablet202
@@ -389,8 +413,8 @@ services:
       - -c
       - /script/vttablet-up.sh 202
     depends_on:
-      vtctld:
-        condition: service_started
+      init_cell:
+        condition: service_completed_successfully
     environment:
       - TOPOLOGY_FLAGS=--topo_implementation etcd2 --topo_global_server_address etcd:2379
         --topo_global_root /vitess/global
@@ -418,7 +442,8 @@ services:
     ports:
       - 15202:8080
     volumes:
-      - .:/script
+      - ./vttablet-up.sh:/script/vttablet-up.sh
+      - ./config:/script/config
 
   vttablet204:
     container_name: vttablet204
@@ -427,8 +452,8 @@ services:
       - -c
       - /script/vttablet-up.sh 204
     depends_on:
-      vtctld:
-        condition: service_started
+      init_cell:
+        condition: service_completed_successfully
     environment:
       - TOPOLOGY_FLAGS=--topo_implementation etcd2 --topo_global_server_address etcd:2379
         --topo_global_root /vitess/global
@@ -456,7 +481,8 @@ services:
     ports:
       - 15204:8080
     volumes:
-      - .:/script
+      - ./vttablet-up.sh:/script/vttablet-up.sh
+      - ./config:/script/config
 
   vttablet301:
     container_name: vttablet301
@@ -465,8 +491,8 @@ services:
       - -c
       - /script/vttablet-up.sh 301
     depends_on:
-      vtctld:
-        condition: service_started
+      init_cell:
+        condition: service_completed_successfully
     environment:
       - TOPOLOGY_FLAGS=--topo_implementation etcd2 --topo_global_server_address etcd:2379
         --topo_global_root /vitess/global
@@ -494,7 +520,8 @@ services:
     ports:
       - 15301:8080
     volumes:
-      - .:/script
+      - ./vttablet-up.sh:/script/vttablet-up.sh
+      - ./config:/script/config
 
   vttablet302:
     container_name: vttablet302
@@ -503,8 +530,8 @@ services:
       - -c
       - /script/vttablet-up.sh 302
     depends_on:
-      vtctld:
-        condition: service_started
+      init_cell:
+        condition: service_completed_successfully
     environment:
       - TOPOLOGY_FLAGS=--topo_implementation etcd2 --topo_global_server_address etcd:2379
         --topo_global_root /vitess/global
@@ -532,7 +559,8 @@ services:
     ports:
       - 15302:8080
     volumes:
-      - .:/script
+      - ./vttablet-up.sh:/script/vttablet-up.sh
+      - ./config:/script/config
 
   vttablet304:
     container_name: vttablet304
@@ -541,8 +569,8 @@ services:
       - -c
       - /script/vttablet-up.sh 304
     depends_on:
-      vtctld:
-        condition: service_started
+      init_cell:
+        condition: service_completed_successfully
     environment:
       - TOPOLOGY_FLAGS=--topo_implementation etcd2 --topo_global_server_address etcd:2379
         --topo_global_root /vitess/global
@@ -570,4 +598,5 @@ services:
     ports:
       - 15304:8080
     volumes:
-      - .:/script
+      - ./vttablet-up.sh:/script/vttablet-up.sh
+      - ./config:/script/config
